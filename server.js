@@ -23,6 +23,40 @@ app.post('/api/chat', async (req, res) => {
     try {
         const { message, conversationHistory } = req.body;
         
+        // Check if this is a sizing request
+        if (message.toLowerCase().includes('size') || message.toLowerCase().includes('sizing')) {
+            return res.json({
+                response: "Let's find your perfect size! 👕\n\nWhat's your gender? This helps us with sizing calculations.",
+                showOptions: true,
+                options: [
+                    { text: "👨 Male", value: "male" },
+                    { text: "👩 Female", value: "female" }
+                ]
+            });
+        }
+
+        // Check for gender selection
+        if (message.toLowerCase().includes('male') || message.toLowerCase().includes('female')) {
+            return res.json({
+                response: "📏 What's your height and weight?\n\n💡 Example: If you're 5 feet 10 inches and 160 pounds, type:\n5'10\" 160lbs",
+                expectMeasurements: true
+            });
+        }
+
+        // Check if message contains height and weight
+        const measurementPattern = /(\d+'?\d*\"?)\s*(\d+)\s*(?:lbs?|pounds?)/i;
+        if (measurementPattern.test(message)) {
+            return res.json({
+                response: "🛍️ What type of item are you looking for?",
+                showOptions: true,
+                options: [
+                    { text: "👕 Tops", value: "tops" },
+                    { text: "👖 Bottoms", value: "bottoms" },
+                    { text: "🧥 Outerwear", value: "outerwear" }
+                ]
+            });
+        }
+
         // Get store data
         const storeData = {
             shipping: {
