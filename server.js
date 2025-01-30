@@ -5,8 +5,24 @@ const Shopify = require('shopify-api-node');
 const fs = require('fs');
 
 const app = express();
-app.use(cors());
+
+// Configure CORS with specific options
+app.use(cors({
+    origin: [
+        'https://rouqegolf.com',
+        'http://rouqegolf.com',
+        'http://localhost:3000',  // for local development
+        'http://localhost:5000'   // for local development
+    ],
+    methods: ['POST', 'GET', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+}));
+
 app.use(express.json());
+
+// Add OPTIONS handling for preflight requests
+app.options('*', cors());
 
 // Initialize OpenAI with new syntax
 const openai = new OpenAI({
