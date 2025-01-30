@@ -20,6 +20,49 @@ const shopify = new Shopify({
     apiVersion: '2024-01'
 });
 
+// Near the top of server.js, add the store data
+const storeData = {
+    policies: {
+        shipping: {
+            methods: [
+                { name: 'Canada Standard', time: '5-10 business days' },
+                { name: 'US Standard', time: '5-10 business days' },
+                { name: 'Australia and UK', time: '10-18 business days' },
+                { name: 'Rest of World', time: '10-22 business days' }
+            ],
+            processing: '48 hours for in-stock items',
+            notes: [
+                'Please double-check your shipping address before ordering',
+                'We\'re not responsible for customs fees',
+                'Tracking provided for all orders'
+            ]
+        },
+        returns: {
+            timeframe: '14 days',
+            conditions: [
+                'Items must be in original condition',
+                'Must be unworn',
+                'All tags must be attached'
+            ],
+            process: [
+                'Contact via email before shipping returns',
+                'Use Return Portal',
+                'Ship to provided return address'
+            ]
+        }
+    },
+    sizingLogic: {
+        tops: {
+            xs: { weightRange: [45, 60], heightRange: [150, 165] },
+            s: { weightRange: [55, 70], heightRange: [160, 175] },
+            m: { weightRange: [65, 80], heightRange: [170, 180] },
+            l: { weightRange: [75, 90], heightRange: [175, 185] },
+            xl: { weightRange: [85, 100], heightRange: [180, 190] },
+            xxl: { weightRange: [95, 120], heightRange: [185, 200] }
+        }
+    }
+};
+
 // Create a conversation logger and learner
 const logConversation = async (question, answer, helpful = true) => {
     try {
@@ -51,6 +94,8 @@ const logConversation = async (question, answer, helpful = true) => {
 app.post('/api/chat', async (req, res) => {
     try {
         const { message, conversationHistory } = req.body;
+        
+        console.log('Received message:', message); // Add logging
         
         // Check if this is a sizing calculation
         const measurementPattern = /(\d+'?\d*\"?)\s*(\d+)\s*(?:lbs?|pounds?)/i;
@@ -177,10 +222,10 @@ STORE INFORMATION:
 ${JSON.stringify(storeData, null, 2)}`;
 
         const completion = await openai.chat.completions.create({
-            model: "gpt-4-turbo-preview", // Upgraded to GPT-4 for better understanding
+            model: "gpt-4-turbo-preview",
             messages: [
                 { role: "system", content: systemPrompt },
-                ...conversationHistory.slice(-4), // Only last 4 messages for context
+                ...conversationHistory.slice(-4),
                 { role: "user", content: message }
             ],
             temperature: 0.7,
@@ -190,14 +235,18 @@ ${JSON.stringify(storeData, null, 2)}`;
         });
 
         const response = completion.choices[0].message.content;
+        console.log('AI Response:', response); // Add logging
 
         // Log the conversation for future learning
         await logConversation(message, response);
 
         res.json({ response });
     } catch (error) {
-        console.error('Error:', error);
-        res.status(500).json({ error: 'An error occurred' });
+        console.error('Server Error:', error); // Better error logging
+        res.status(500).json({ 
+            error: 'An error occurred',
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 });
 
@@ -273,44 +322,6 @@ function updateLearningContext(feedbackData) {
     // Save to a learning context file
     fs.writeFileSync('learning-context.json', JSON.stringify(bestResponses, null, 2));
 }
-
-const sizingLogic = {
-    tops: {
-        xs: { weightRange: [45, 60], heightRange: [150, 165] },
-        s: { weightRange: [55, 70], heightRange: [160, 175] },
-        m: { weightRange: [65, 80], heightRange: [170, 180] },
-        l: { weightRange: [75, 90], heightRange: [175, 185] },
-        xl: { weightRange: [85, 100], heightRange: [180, 190] },
-        xxl: { weightRange: [95, 120], heightRange: [185, 200] }
-    },
-    // ... other sizing categories
-};
-
-const policies = {
-    shipping: {
-        methods: [
-            { name: 'Canada Standard', time: '5-10 business days' },
-            { name: 'US Standard', time: '5-10 business days' },
-            { name: 'Australia and UK', time: '10-18 business days' },
-            { name: 'Rest of World', time: '10-22 business days' }
-        ],
-        processing: '48 hours for in-stock items',
-        notes: [
-            'Please double-check your shipping address before ordering',
-            'We\'re not responsible for customs fees',
-            'Tracking provided for all orders'
-        ]
-    },
-    returns: {
-        timeframe: '14 days',
-        conditions: [
-            'Items must be in original condition',
-            'Must be unworn',
-            'All tags must be attached'
-        ],
-        // ... other return policies
-    }
-};
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`)); 
