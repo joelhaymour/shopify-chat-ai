@@ -6,23 +6,39 @@ const fs = require('fs');
 
 const app = express();
 
-// Configure CORS with specific options
+// Update the CORS configuration
 app.use(cors({
     origin: [
         'https://rouqegolf.com',
+        'https://www.rouqegolf.com',  // Added www subdomain
         'http://rouqegolf.com',
-        'http://localhost:3000',  // for local development
-        'http://localhost:5000'   // for local development
+        'http://www.rouqegolf.com',   // Added www subdomain
+        'http://localhost:3000',
+        'http://localhost:5000'
     ],
     methods: ['POST', 'GET', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true
+    allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept'], // Added more headers
+    exposedHeaders: ['Content-Length', 'X-Requested-With'],
+    credentials: true,
+    maxAge: 86400 // Preflight results can be cached for 24 hours
 }));
 
-app.use(express.json());
+// Add this before your routes
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', req.headers.origin);
+    res.header('Access-Control-Allow-Credentials', true);
+    res.header(
+        'Access-Control-Allow-Headers',
+        'Origin, X-Requested-With, Content-Type, Accept, Authorization'
+    );
+    if (req.method === 'OPTIONS') {
+        res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH');
+        return res.status(200).json({});
+    }
+    next();
+});
 
-// Add OPTIONS handling for preflight requests
-app.options('*', cors());
+app.use(express.json());
 
 // Initialize OpenAI with new syntax
 const openai = new OpenAI({
