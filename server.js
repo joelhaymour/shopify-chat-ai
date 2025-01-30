@@ -64,11 +64,51 @@ const logConversation = async (question, answer, helpful = true) => {
     }
 };
 
+// Add predefined responses for suggested questions
+const PREDEFINED_RESPONSES = {
+    'Shipping Info': `Here's our shipping information:
+- Free shipping on orders over $75
+- Standard shipping: 3-5 business days
+- Express shipping: 1-2 business days
+- International shipping available`,
+    
+    'Return Policy': `Our Return Policy:
+- 30-day return window
+- Items must be unworn with original tags
+- Free returns for US customers
+- Email info@rouqesupport.com to initiate a return`,
+    
+    'Help With Sizing': `For sizing assistance:
+- Please provide your height and weight
+- We'll recommend the best size for you
+- View our size chart for detailed measurements
+- Contact us for specific product measurements`,
+    
+    'Track My Order': `To track your order:
+- Check your order confirmation email
+- Visit our website and click "Track Order"
+- Email info@rouqesupport.com with your order number
+- Allow 24-48 hours for tracking to update`,
+    
+    'Restock Questions': `About Restocks:
+- Join our waitlist for notifications
+- Most items restock within 2-4 weeks
+- Limited editions may not be restocked
+- Email info@rouqesupport.com for specific item inquiries`
+};
+
 // Main chat endpoint
 app.post('/api/chat', async (req, res) => {
     try {
         const { message, conversationHistory } = req.body;
         console.log('Received message:', message);
+
+        // Check if it's a predefined question
+        if (PREDEFINED_RESPONSES[message]) {
+            const response = PREDEFINED_RESPONSES[message];
+            await logConversation(message, response);
+            return res.json({ response });
+        }
 
         // Check for sizing calculation
         const measurementPattern = /(\d+'?\d*\"?)\s*(\d+)\s*(?:lbs?|pounds?)/i;
