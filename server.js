@@ -2,6 +2,7 @@ const express = require('express');
 const OpenAI = require('openai');
 const Shopify = require('shopify-api-node');
 const fs = require('fs');
+const cors = require('cors');
 
 // Import our new configurations
 const config = require('./config/config');
@@ -27,6 +28,17 @@ setupMiddleware(app);
 
 // Parse JSON bodies
 app.use(express.json());
+
+// Update the CORS configuration at the top of server.js
+app.use(cors({
+    origin: ['https://rouqegolf.com', 'https://www.rouqegolf.com'],
+    methods: ['POST', 'GET', 'OPTIONS'],
+    allowedHeaders: ['Content-Type'],
+    credentials: true
+}));
+
+// Add a preflight handler
+app.options('*', cors());
 
 // Create a conversation logger
 const logConversation = async (question, answer, helpful = true) => {
